@@ -1,3 +1,6 @@
+import { type InferSelectModel } from "drizzle-orm";
+import { emailAccount } from "./drizzle/schema";
+
 export type SmartleadEmailAccount = {
   id: number;
   created_at: string;
@@ -190,7 +193,8 @@ export type MailTester = {
   };
 };
 
-
 export interface IScraperDetails {
   userId: string;
 }
+
+export type EmailAccount = InferSelectModel<typeof emailAccount>;

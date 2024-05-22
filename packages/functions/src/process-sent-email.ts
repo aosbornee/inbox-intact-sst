@@ -1,10 +1,10 @@
 import { EmailOpenResponse, MailTester } from "@inbox-intact-sst/core/types";
 import axios from "axios";
-import { PrismaClient } from "@prisma/client";
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { IncomingWebhook } from "@slack/webhook";
-
-const client = new PrismaClient();
+import { smartleadActiveCampaign } from "@inbox-intact-sst/core/drizzle/schema";
+import { db } from "@inbox-intact-sst/core/drizzle/db";
+import { eq, count, and } from "drizzle-orm";
 
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   if (!event.body || !event?.pathParameters?.userId)
@@ -17,36 +17,38 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
 
   const strippedEmail = toEmail.split("@")[0];
 
-  await client.smartleadActiveCampaign.update({
-    where: {
-      id: campaignId,
-      userId,
-    },
-    data: {
-      isCompleted: true,
-    },
-  });
+  await db
+    .update(smartleadActiveCampaign)
+    .set({ isCompleted: true })
+    .where(eq(smartleadActiveCampaign.id, campaignId));
 
-  // Check if all campaigns for this user are completed
-  const incompleteCampaigns = await client.smartleadActiveCampaign.count({
-    where: {
-      userId: userId,
-      isCompleted: false,
-    },
-  });
+  const incompleteCampaigns = await db
+    .select({ count: count() })
+    .from(smartleadActiveCampaign)
+    .where(
+      and(
+        eq(smartleadActiveCampaign.userId, userId),
+        eq(smartleadActiveCampaign.isCompleted, false)
+      )
+    );
 
-  if (incompleteCampaigns > 0) {
+  if (incompleteCampaigns[0].count > 0) {
     return {
       statusCode: 200,
       body: JSON.stringify({ message: "Not all campaigns completed yet." }),
     };
   }
 
-  const user = await client.user.findUniqueOrThrow({
-    where: { id: userId },
-    include: { slack: true },
+  const user = await db.query.user.findFirst({
+    where: (model, { eq }) => eq(model.id, userId),
+    with: {
+      slack: true,
+      emailAccounts: true,
+    },
   });
-  if (!user.slack) throw new Error("There's a problem");
+
+  if (!user) throw new Error("User not found");
+  if (!user.slack) throw new Error("No slack key set for user");
 
   try {
     const response = await axios.get<MailTester>(
