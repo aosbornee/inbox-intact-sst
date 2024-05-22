@@ -1,0 +1,19 @@
+{
+  "name": "@inbox-intact-sst/core",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "sst bind vitest",
+    "typecheck": "tsc -noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.10",
+    "sst": "^2.41.5",
+    "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-scheduler": "3.569.0",
+    "@slack/webhook": "7.0.2",
+    "axios": "1.6.8"
+  }
+}

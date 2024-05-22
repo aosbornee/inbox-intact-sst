@@ -1,0 +1,67 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                       String                    @id @default(uuid())
+  name                     String?
+  email                    String                    @unique
+  profileImage             String?
+  tier                     String?                   @default("Free")
+  credits                  String?                   @default("10")
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  smartleadApiKey          String?
+  emailBodyTemplate        String?
+  slack                    Slack?
+  emailAccounts            EmailAccount[]
+  smartleadActiveCampaigns SmartleadActiveCampaign[]
+}
+
+model EmailAccount {
+  id          String  @id @default(uuid())
+  smartleadId String
+  email       String
+  type        String
+  isTracked   Boolean @default(false) // Field to indicate if the email is being tracked
+  user        User    @relation(fields: [userId], references: [id])
+  userId      String
+
+  @@index([userId])
+}
+
+model SmartleadActiveCampaign {
+  id          Int     @unique
+  emailUsed   String
+  user        User    @relation(fields: [userId], references: [id])
+  userId      String
+  isCompleted Boolean @default(false)
+
+  @@index([userId])
+}
+
+model Slack {
+  id               String @id @default(uuid())
+  appId            String
+  authedUserId     String
+  slackAccessToken String @unique
+  botUserId        String
+  teamId           String
+  teamName         String
+  incomingWebhook  String
+  user             User   @relation(fields: [userId], references: [id])
+  userId           String @unique
+
+  @@index([userId])
+}
+
+// enum EmailType {
+//   SMARTLEAD
+//   INSTANTLY
+// }
