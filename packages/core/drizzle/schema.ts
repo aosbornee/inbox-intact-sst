@@ -32,7 +32,7 @@ export const emailAccount = pgTable("email-account", {
 });
 
 export const smartleadActiveCampaign = pgTable("smartlead-active-campaign", {
-  id: integer("id").unique(),
+  id: integer("id").primaryKey(),
   emailUsed: text("email_used").notNull(),
   isCompleted: boolean("is_completed").default(false),
   userId: text("user_id")

@@ -15,6 +15,14 @@ const createCampaign = async (email: string, apiKey: string) => {
   return data;
 };
 
+export const deleteCampaign = async (campaignId: number, apiKey: string) => {
+  const response = await axios.delete<{
+    ok: boolean;
+  }>(`${BASE_SMARTLEAD_URL}/campaigns/${campaignId}/?api_key=${apiKey}`);
+  const { data } = response;
+  return data;
+};
+
 type IProps = {
   userId: string;
   apiKey: string;

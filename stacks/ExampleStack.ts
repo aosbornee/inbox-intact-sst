@@ -18,6 +18,13 @@ export function ExampleStack({ stack, app }: StackContext) {
       "POST /process-sent-email/{userId}":
         "packages/functions/src/process-sent-email.handler",
     },
+    defaults: {
+      function: {
+        environment: {
+          ...environment,
+        },
+      },
+    },
   });
 
   const eventBus = new EventBus(stack, "EventBus");
