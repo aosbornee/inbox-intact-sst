@@ -1,8 +1,4 @@
-import path from "path";
-import fs from "fs";
-import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Api, StackContext, Function, EventBus } from "sst/constructs";
-
 import {
   Effect,
   Policy,
@@ -12,56 +8,22 @@ import {
 } from "aws-cdk-lib/aws-iam";
 import { environment } from "./constants";
 
-const prismaDatabaseLayerPath = "./.sst/layers/prisma";
-
-function preparePrismaLayerFiles() {
-  // Remove any existing layer path data
-  fs.rmSync(prismaDatabaseLayerPath, { force: true, recursive: true });
-
-  // Create a fresh new layer path
-  fs.mkdirSync(prismaDatabaseLayerPath, { recursive: true });
-
-  // Prisma folders to retrieve the client and the binaries from
-  const prismaFiles = [
-    "node_modules/@prisma/client",
-    "node_modules/prisma/build",
-  ];
-
-  for (const file of prismaFiles) {
-    fs.cpSync(file, path.join(prismaDatabaseLayerPath, "nodejs", file), {
-      // Do not include binary files that aren't for AWS to save space
-      filter: (src) =>
-        !src.endsWith("so.node") ||
-        src.includes("rhel") ||
-        src.includes("linux-arm64"),
-      recursive: true,
-    });
-  }
-}
-
 export function ExampleStack({ stack, app }: StackContext) {
-  preparePrismaLayerFiles();
-
-  // Creation of the Prisma layer
-  const prismaLayer = new lambda.LayerVersion(stack, "PrismaLayer", {
-    code: lambda.Code.fromAsset(path.resolve(prismaDatabaseLayerPath)),
-  });
-
-  // Add the Prisma layer to all functions in this stack
-  stack.addDefaultFunctionLayers([prismaLayer]);
   stack.setDefaultFunctionProps({
     runtime: "nodejs20.x",
-    nodejs: {
-      esbuild: {
-        external: ["@prisma/client", ".prisma"],
-      },
-    },
   });
 
   const api = new Api(stack, "WebhookApi", {
     routes: {
       "POST /process-sent-email/{userId}":
         "packages/functions/src/process-sent-email.handler",
+    },
+    defaults: {
+      function: {
+        environment: {
+          ...environment,
+        },
+      },
     },
   });
 
@@ -73,6 +35,7 @@ export function ExampleStack({ stack, app }: StackContext) {
 
   stack.addDefaultFunctionEnv({
     ...environment,
+    WEBHOOK_API_URL: api.url,
     SCHEDULE_ROLE_ARN: scheduleRole.roleArn,
     EVENTBUS_ARN: eventBus.eventBusArn,
   });
@@ -96,10 +59,6 @@ export function ExampleStack({ stack, app }: StackContext) {
 
   const createScrapeSchedule = new Function(stack, "CreateScrapeSchedule", {
     handler: "packages/functions/src/scrape/create-scrape-scheduler.handler",
-    // environment: {
-    //   SCHEDULE_ROLE_ARN: scheduleRole.roleArn,
-    //   EVENTBUS_ARN: eventBus.eventBusArn,
-    // },
     initialPolicy: [
       // Give lambda permission to create group, schedule and pass IAM role to the scheduler
       new PolicyStatement({

@@ -1,15 +1,6 @@
 import axios from "axios";
 import { BASE_SMARTLEAD_URL, MAIL_TESTER_USERNAME } from "./constants";
-import { EmailAccount } from "@prisma/client";
-// import { SmartleadEmailAccount } from "./types";
-
-// export const getEmailAccounts = async () => {
-//   const response = await axios.get<SmartleadEmailAccount[]>(
-//     `${BASE_SMARTLEAD_URL}/email-accounts/?api_key=${apiKey}`
-//   );
-//   const emailAccounts = response.data;
-//   return emailAccounts;
-// };
+import { EmailAccount } from "./types";
 
 const createCampaign = async (email: string, apiKey: string) => {
   const response = await axios.post<{
@@ -24,10 +15,19 @@ const createCampaign = async (email: string, apiKey: string) => {
   return data;
 };
 
+export const deleteCampaign = async (campaignId: number, apiKey: string) => {
+  const response = await axios.delete<{
+    ok: boolean;
+  }>(`${BASE_SMARTLEAD_URL}/campaigns/${campaignId}/?api_key=${apiKey}`);
+  const { data } = response;
+  return data;
+};
+
 type IProps = {
   userId: string;
   apiKey: string;
   emailAccount: EmailAccount;
+  webhookUrl: string;
   emailBodyTemplate?: string;
 };
 
@@ -36,6 +36,7 @@ export const createSmartleadCampaign = async ({
   userId,
   emailAccount,
   emailBodyTemplate,
+  webhookUrl,
 }: IProps) => {
   const campaign = await createCampaign(emailAccount.email, apiKey);
 
@@ -128,7 +129,7 @@ export const createSmartleadCampaign = async ({
     `${BASE_SMARTLEAD_URL}/campaigns/${campaign.id}/webhooks/?api_key=${apiKey}`,
     {
       name: "Deliverability Testing",
-      webhook_url: `https://vnc5buzaxi.execute-api.us-east-1.amazonaws.com/process-sent-email/${userId}`,
+      webhook_url: `${webhookUrl}/process-sent-email/${userId}`,
       event_types: ["EMAIL_SENT"],
     }
   );

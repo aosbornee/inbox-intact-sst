@@ -6,28 +6,21 @@
   "scripts": {
     "dev": "sst dev",
     "build": "sst build",
-    "deploy": "npx prisma generate && sst deploy --stage prod",
-    "deploy-stage": "npx prisma generate && sst deploy --stage staging",
-    "postinstall": "npx prisma generate",
+    "deploy": "sst deploy --stage prod",
+    "deploy-stage": "sst deploy --stage staging",
     "remove": "sst remove --stage staging",
     "console": "sst console",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "sst": "^2.41.5",
-    "aws-cdk-lib": "2.132.1",
+    "aws-cdk-lib": "2.142.1",
     "constructs": "10.3.0",
     "typescript": "^5.4.5",
-    "@tsconfig/node18": "^18.2.4",
-    "@types/fs-extra": "^11.0.4",
-    "prisma": "^5.13.0"
+    "@tsconfig/node18": "^18.2.4"
   },
   "workspaces": [
     "packages/*"
   ],
-  "dependencies": {
-    "prisma": "^5.13.0",
-    "fs-extra": "^11.2.0",
-    "@prisma/client": "^5.13.0"
-  }
+  "dependencies": {}
 }
