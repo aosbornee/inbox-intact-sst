@@ -7,7 +7,7 @@
 ```json
 {
   "detail": {
-    "userId": "user_2gSIaWug9uBqKUANWdrEA59UB4g"
+    "userId": "user_2gpX2yRPEUFRXgslwGePt2U7S8D"
   }
 }
 ````

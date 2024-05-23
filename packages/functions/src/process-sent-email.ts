@@ -6,6 +6,8 @@ import { smartleadActiveCampaign } from "@inbox-intact-sst/core/drizzle/schema";
 import { db } from "@inbox-intact-sst/core/drizzle/db";
 import { eq, count, and } from "drizzle-orm";
 import { deleteCampaign } from "@inbox-intact-sst/core/create-smartlead-campaign";
+import { createSpreadsheet } from "@inbox-intact-sst/core/spreadsheet";
+import { MAIL_TESTER_USERNAME } from "@inbox-intact-sst/core/constants";
 
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   try {
@@ -17,9 +19,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
 
     console.log("API triggered with this data", data);
 
-    const { to_email: toEmail, campaign_id: campaignId } = data;
-
-    const strippedEmail = toEmail.split("@")[0];
+    const { campaign_id: campaignId } = data;
 
     await db
       .update(smartleadActiveCampaign)
@@ -57,7 +57,6 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     const apiKey = user.smartleadApiKey;
     if (!apiKey) throw new Error("API Key Not Set");
 
-    // Loop over each tracked email account and run the campaign creation logic
     for (const campaign of user.smartleadActiveCampaigns) {
       try {
         await deleteCampaign(campaign.id, apiKey);
@@ -67,23 +66,43 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         );
       }
     }
+
+    const rows = await Promise.all(
+      user.smartleadActiveCampaigns.map(async (campaign) => {
+        const inboxUrl = `https://www.mail-tester.com/${MAIL_TESTER_USERNAME}-${campaign.id}&format=json`;
+        const response = await axios.get<MailTester>(inboxUrl);
+        const { data: mailData } = response;
+        return {
+          // no. of blacklists
+          // blacklists
+          emailInbox: campaign.emailUsed,
+          testScore: mailData.displayedMark,
+          testLink: inboxUrl,
+          testDate: mailData.messageInfo.dateReceived,
+        };
+      })
+    );
+
     await db
       .delete(smartleadActiveCampaign)
       .where(eq(smartleadActiveCampaign.userId, userId));
 
-    const response = await axios.get<MailTester>(
-      `https://www.mail-tester.com/${strippedEmail}&format=json`
-    );
-    const { data: mailData } = response;
-
-    console.log(mailData, "mailData");
-
-    const { body } = mailData;
-
-    const slackWebhookUrl = user.slack.incomingWebhook;
-    const webhook = new IncomingWebhook(slackWebhookUrl);
+    const link = await createSpreadsheet(rows);
+    const webhook = new IncomingWebhook(user.slack.incomingWebhook);
     await webhook.send({
-      text: `I've got news for you... ${body.title}`,
+      text: `Your Deliverability Results Are *Ready* :smile: \n <${link}|Here's the link>`,
+      blocks: [
+        {
+          type: "divider",
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `Your Deliverability Results Are *Ready* :smile: \n <${link}|Here's the link>`,
+          },
+        },
+      ],
     });
     return {
       statusCode: 200,
