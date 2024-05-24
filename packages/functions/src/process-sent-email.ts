@@ -69,8 +69,8 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
 
     const rows = await Promise.all(
       user.smartleadActiveCampaigns.map(async (campaign) => {
-        const inboxUrl = `https://www.mail-tester.com/${MAIL_TESTER_USERNAME}-${campaign.id}&format=json`;
-        const response = await axios.get<MailTester>(inboxUrl);
+        const inboxUrl = `https://www.mail-tester.com/${MAIL_TESTER_USERNAME}-${campaign.id}`;
+        const response = await axios.get<MailTester>(`${inboxUrl}&format=json`);
         const { data: mailData } = response;
         console.log(mailData, "mailData");
         return {
