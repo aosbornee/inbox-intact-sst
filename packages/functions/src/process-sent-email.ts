@@ -1,6 +1,6 @@
 import { EmailOpenResponse, MailTester } from "@inbox-intact-sst/core/types";
 import axios from "axios";
-import { APIGatewayProxyHandlerV2, LambdaFunctionURLHandler } from "aws-lambda";
+import { LambdaFunctionURLHandler } from "aws-lambda";
 import { IncomingWebhook } from "@slack/webhook";
 import { smartleadActiveCampaign } from "@inbox-intact-sst/core/drizzle/schema";
 import { db } from "@inbox-intact-sst/core/drizzle/db";
@@ -11,9 +11,6 @@ import { MAIL_TESTER_USERNAME } from "@inbox-intact-sst/core/constants";
 
 export const handler: LambdaFunctionURLHandler = async (event) => {
   try {
-    // if (!event.body || !event?.pathParameters?.userId)
-    //   throw new Error("There's a problem");
-
     if (!event.body || !event?.queryStringParameters?.userId)
       throw new Error("There's a problem");
 

@@ -11,6 +11,7 @@ import { environment } from "./constants";
 export function ExampleStack({ stack, app }: StackContext) {
   stack.setDefaultFunctionProps({
     runtime: "nodejs20.x",
+    timeout: "60 seconds",
   });
 
   const eventBus = new EventBus(stack, "EventBus");
