@@ -1,5 +1,5 @@
 import { type InferSelectModel } from "drizzle-orm";
-import { emailAccount } from "./drizzle/schema";
+import { emailAccount, emailTemplate } from "./drizzle/schema";
 
 export type SmartleadEmailAccount = {
   id: number;
@@ -198,3 +198,5 @@ export interface IScraperDetails {
 }
 
 export type EmailAccount = InferSelectModel<typeof emailAccount>;
+
+export type EmailBody = InferSelectModel<typeof emailTemplate>;

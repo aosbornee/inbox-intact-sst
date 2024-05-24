@@ -1,6 +1,6 @@
 import axios from "axios";
 import { BASE_SMARTLEAD_URL, MAIL_TESTER_USERNAME } from "./constants";
-import { EmailAccount } from "./types";
+import { EmailAccount, EmailBody } from "./types";
 
 const createCampaign = async (email: string, apiKey: string) => {
   const response = await axios.post<{
@@ -28,21 +28,22 @@ type IProps = {
   apiKey: string;
   emailAccount: EmailAccount;
   webhookUrl: string;
-  emailBodyTemplate?: string;
+  emailTemplate: EmailBody;
 };
 
 export const createSmartleadCampaign = async ({
   apiKey,
   userId,
   emailAccount,
-  emailBodyTemplate,
+  emailTemplate,
   webhookUrl,
 }: IProps) => {
   const campaign = await createCampaign(emailAccount.email, apiKey);
 
+  console.log(emailTemplate.body, "email body");
+
   console.log("Campaign created");
 
-  // Add the email account to the campaign
   await axios.post(
     `${BASE_SMARTLEAD_URL}/campaigns/${campaign.id}/email-accounts/?api_key=${apiKey}`,
     { email_account_ids: [emailAccount.smartleadId] }
@@ -50,11 +51,10 @@ export const createSmartleadCampaign = async ({
 
   console.log("Email account added to campaign");
 
-  // const uniqueIdentifier = `${campaign.id}:${userId}`;
-  const uniqueIdentifier = `${campaign.id}`;
+  const body = emailTemplate.body.replace(/\n/g, "<br>");
+  const htmlBody = `<p>${body}</p>`;
 
-  const emailToSend = `${MAIL_TESTER_USERNAME}-${uniqueIdentifier}@mail-tester.com`;
-  console.log(emailToSend, "emailToSend");
+  const emailToSend = `${MAIL_TESTER_USERNAME}-${campaign.id}@mail-tester.com`;
 
   try {
     await axios.post(
@@ -85,9 +85,8 @@ export const createSmartleadCampaign = async ({
           },
           seq_variants: [
             {
-              subject: "Quick Q brother",
-              email_body:
-                "<p>Hi<br><br>How are you?<br><br>Hope you're doing good</p>",
+              subject: emailTemplate.subject,
+              email_body: htmlBody,
               variant_label: "A",
             },
           ],
@@ -129,7 +128,7 @@ export const createSmartleadCampaign = async ({
     `${BASE_SMARTLEAD_URL}/campaigns/${campaign.id}/webhooks/?api_key=${apiKey}`,
     {
       name: "Deliverability Testing",
-      webhook_url: `${webhookUrl}/process-sent-email/${userId}`,
+      webhook_url: `${webhookUrl}?userId=${userId}`,
       event_types: ["EMAIL_SENT"],
     }
   );

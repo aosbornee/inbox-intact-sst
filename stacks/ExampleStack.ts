@@ -1,4 +1,4 @@
-import { Api, StackContext, Function, EventBus } from "sst/constructs";
+import {StackContext, Function, EventBus } from "sst/constructs";
 import {
   Effect,
   Policy,
@@ -13,20 +13,6 @@ export function ExampleStack({ stack, app }: StackContext) {
     runtime: "nodejs20.x",
   });
 
-  const api = new Api(stack, "WebhookApi", {
-    routes: {
-      "POST /process-sent-email/{userId}":
-        "packages/functions/src/process-sent-email.handler",
-    },
-    defaults: {
-      function: {
-        environment: {
-          ...environment,
-        },
-      },
-    },
-  });
-
   const eventBus = new EventBus(stack, "EventBus");
 
   const scheduleRole = new Role(stack, "scheduler-role", {
@@ -35,9 +21,20 @@ export function ExampleStack({ stack, app }: StackContext) {
 
   stack.addDefaultFunctionEnv({
     ...environment,
-    WEBHOOK_API_URL: api.url,
     SCHEDULE_ROLE_ARN: scheduleRole.roleArn,
     EVENTBUS_ARN: eventBus.eventBusArn,
+  });
+
+  const webhookProcessor = new Function(stack, "WebhookProcessor", {
+    handler: "packages/functions/src/process-sent-email.handler",
+    url: true,
+  });
+
+  const scrape = new Function(stack, "Scrape", {
+    handler: "packages/functions/src/scrape/scraper.handler",
+    environment: {
+      WEBHOOK_API_URL: webhookProcessor.url!,
+    },
   });
 
   new Policy(stack, "schedule-policy", {
@@ -50,11 +47,6 @@ export function ExampleStack({ stack, app }: StackContext) {
         resources: [eventBus.eventBusArn],
       }),
     ],
-  });
-
-  const scrape = new Function(stack, "Scrape", {
-    handler: "packages/functions/src/scrape/scraper.handler",
-    permissions: ["ssm"],
   });
 
   const createScrapeSchedule = new Function(stack, "CreateScrapeSchedule", {
@@ -104,6 +96,6 @@ export function ExampleStack({ stack, app }: StackContext) {
   });
 
   stack.addOutputs({
-    api: api.url,
+    webhookProcessor: webhookProcessor.url,
   });
 }

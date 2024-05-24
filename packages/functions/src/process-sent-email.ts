@@ -1,6 +1,6 @@
 import { EmailOpenResponse, MailTester } from "@inbox-intact-sst/core/types";
 import axios from "axios";
-import { APIGatewayProxyHandlerV2 } from "aws-lambda";
+import { APIGatewayProxyHandlerV2, LambdaFunctionURLHandler } from "aws-lambda";
 import { IncomingWebhook } from "@slack/webhook";
 import { smartleadActiveCampaign } from "@inbox-intact-sst/core/drizzle/schema";
 import { db } from "@inbox-intact-sst/core/drizzle/db";
@@ -9,12 +9,15 @@ import { deleteCampaign } from "@inbox-intact-sst/core/create-smartlead-campaign
 import { createSpreadsheet } from "@inbox-intact-sst/core/spreadsheet";
 import { MAIL_TESTER_USERNAME } from "@inbox-intact-sst/core/constants";
 
-export const handler: APIGatewayProxyHandlerV2 = async (event) => {
+export const handler: LambdaFunctionURLHandler = async (event) => {
   try {
-    if (!event.body || !event?.pathParameters?.userId)
+    // if (!event.body || !event?.pathParameters?.userId)
+    //   throw new Error("There's a problem");
+
+    if (!event.body || !event?.queryStringParameters?.userId)
       throw new Error("There's a problem");
 
-    const userId = event.pathParameters.userId;
+    const userId = event.queryStringParameters.userId;
     const data = JSON.parse(event.body) as EmailOpenResponse;
 
     console.log("API triggered with this data", data);
@@ -72,7 +75,6 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         const inboxUrl = `https://www.mail-tester.com/${MAIL_TESTER_USERNAME}-${campaign.id}`;
         const response = await axios.get<MailTester>(`${inboxUrl}&format=json`);
         const { data: mailData } = response;
-        console.log(mailData, "mailData");
         return {
           // no. of blacklists
           // blacklists

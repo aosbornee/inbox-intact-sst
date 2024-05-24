@@ -18,10 +18,12 @@ export const handler = async (
       with: {
         slack: true,
         emailAccounts: true,
+        emailTemplate: true,
       },
     });
 
     if (!user) throw new Error("User not found");
+    if (!user.emailTemplate) throw new Error("No email template set for user");
     const apiKey = user.smartleadApiKey;
     if (!apiKey) throw new Error("API Key Not Set");
 
@@ -34,6 +36,7 @@ export const handler = async (
           apiKey,
           userId,
           emailAccount,
+          emailTemplate: user.emailTemplate,
           webhookUrl: process.env.WEBHOOK_API_URL as string,
         });
         await db.insert(smartleadActiveCampaign).values({
