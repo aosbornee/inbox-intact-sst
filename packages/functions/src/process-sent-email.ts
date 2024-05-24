@@ -72,13 +72,16 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         const inboxUrl = `https://www.mail-tester.com/${MAIL_TESTER_USERNAME}-${campaign.id}&format=json`;
         const response = await axios.get<MailTester>(inboxUrl);
         const { data: mailData } = response;
+        console.log(mailData, "mailData");
         return {
           // no. of blacklists
           // blacklists
-          emailInbox: campaign.emailUsed,
-          testScore: mailData.displayedMark,
-          testLink: inboxUrl,
-          testDate: mailData.messageInfo.dateReceived,
+          inbox: campaign.emailUsed,
+          score: mailData.displayedMark,
+          link: inboxUrl,
+          date:
+            mailData.messageInfo?.dateReceived ||
+            new Date().toLocaleDateString(),
         };
       })
     );

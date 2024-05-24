@@ -14,24 +14,25 @@ const jwt = new JWT({
 
 export const createSpreadsheet = async (
   rows: {
-    emailInbox: string;
-    testScore: string;
-    testLink: string;
-    testDate: string;
+    inbox: string;
+    score: string;
+    link: string;
+    date: string;
   }[]
 ) => {
   const doc = await GoogleSpreadsheet.createNewSpreadsheetDocument(jwt, {
-    title: `Deliverability Report For: ${new Date().toISOString()}`,
+    title: `Deliverability Report For: ${new Date().toLocaleDateString()}`,
   });
-  await doc.setPublicAccessLevel("reader");
-
-  await doc.sheetsByIndex[0].delete();
+  await doc.setPublicAccessLevel("writer");
 
   const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
 
   const sheet = await doc.addSheet({ headerValues: headers });
 
   await sheet.addRows(rows);
+
+  await doc.sheetsByIndex[0].delete();
+
   const link = `https://docs.google.com/spreadsheets/d/${doc.spreadsheetId}`;
   return link;
 };
