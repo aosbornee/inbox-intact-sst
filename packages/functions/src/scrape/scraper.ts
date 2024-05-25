@@ -23,8 +23,8 @@ export const handler = async (
     });
 
     if (!user) throw new Error("User not found");
-    if (!user.emailTemplate) throw new Error("No email template set for user");
-    const apiKey = user.smartleadApiKey;
+    const { emailTemplate, smartleadApiKey: apiKey } = user;
+    if (!emailTemplate) throw new Error("No email template set for user");
     if (!apiKey) throw new Error("API Key Not Set");
 
     const emailsToTrack = user.emailAccounts.filter((email) => email.isTracked);
@@ -36,7 +36,7 @@ export const handler = async (
           apiKey,
           userId,
           emailAccount,
-          emailTemplate: user.emailTemplate,
+          emailTemplate,
           webhookUrl: process.env.WEBHOOK_API_URL as string,
         });
         await db.insert(smartleadActiveCampaign).values({
